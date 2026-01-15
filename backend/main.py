@@ -2,6 +2,7 @@ import sys
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles  # <--- NEW IMPORT
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -12,20 +13,24 @@ from app.agent.graph import graph
 # 1. Setup FastAPI
 app = FastAPI(title="AutoQA Agent API", version="1.0")
 
-# 2. Configure CORS (The Permission Slip)
+# 2. Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # Allows ALL origins (Frontend, Postman, etc.)
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],      # Allows ALL methods
-    allow_headers=["*"],      # Allows ALL headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# 3. Define the Request Format
+# 3. Mount the Static Folder (The Gallery)
+# Make sure the 'static' folder exists in your backend directory!
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# 4. Define the Request Format
 class Request(BaseModel):
     query: str
 
-# 4. Define the Endpoint
+# 5. Define the Endpoint
 @app.post("/chat")
 async def chat_endpoint(request: Request):
     """
@@ -34,7 +39,7 @@ async def chat_endpoint(request: Request):
     print(f"📩 Received Query: {request.query}")
     
     try:
-        # STRICTER SYSTEM PROMPT (Fixes the Loop)
+        # STRICT SYSTEM PROMPT
         system_instructions = """You are an expert QA Engineer.
         Your goal is to complete the user's request efficiently.
         
@@ -42,14 +47,13 @@ async def chat_endpoint(request: Request):
         1. If asked to check a site, use the necessary tools ONE TIME.
         2. Once you receive the tool output, analyze it and provide your Final Answer immediately.
         3. DO NOT run the same tool twice on the same URL unless the first attempt failed.
-        4. If you have the page title and the link report, stop working and report the results.
+        4. CRITICAL: If you use the 'take_screenshot' tool, the tool will give you a URL. You MUST include that exact URL in your final answer so the user can see it.
         """
         
         system_prompt = SystemMessage(content=system_instructions)
         messages = [system_prompt, HumanMessage(content=request.query)]
         
         # Run the Graph
-        # invoke() runs until the graph hits the 'END' node
         result = graph.invoke({"messages": messages})
         
         # Extract the final response from the agent
