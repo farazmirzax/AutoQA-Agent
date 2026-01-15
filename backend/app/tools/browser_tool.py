@@ -73,7 +73,7 @@ class BrowserManager:
                 filepath = f"static/{filename}"
                 
                 # Take the screenshot (full page)
-                page.screenshot(path=filepath, full_page=True)
+                page.screenshot(path=filepath, full_page=False)
                 
                 # Return the URL that the Frontend can use
                 return f"http://localhost:8000/static/{filename}"
