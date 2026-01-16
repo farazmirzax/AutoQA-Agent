@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AutoQA Agent - AI-Powered Web Testing",
   description: "Intelligent web testing platform powered by LangGraph, Groq AI, and Playwright. Automate website analysis, broken link detection, and screenshot capture.",
+  icons: {
+    icon: '/icon.svg',
+  },
 };
 
 export default function RootLayout({

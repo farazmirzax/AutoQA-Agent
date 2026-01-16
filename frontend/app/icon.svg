@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Bug body -->
+  <ellipse cx="50" cy="55" rx="22" ry="28" fill="url(#grad1)"/>
+  
+  <!-- Bug head -->
+  <circle cx="50" cy="30" r="15" fill="url(#grad1)"/>
+  
+  <!-- Antennae -->
+  <path d="M 42 18 Q 35 10 30 5" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 58 18 Q 65 10 70 5" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <circle cx="30" cy="5" r="3" fill="#3b82f6"/>
+  <circle cx="70" cy="5" r="3" fill="#3b82f6"/>
+  
+  <!-- Eyes -->
+  <circle cx="43" cy="28" r="3" fill="white"/>
+  <circle cx="57" cy="28" r="3" fill="white"/>
+  <circle cx="44" cy="28" r="1.5" fill="#1e40af"/>
+  <circle cx="58" cy="28" r="1.5" fill="#1e40af"/>
+  
+  <!-- Legs -->
+  <path d="M 32 50 Q 20 50 15 55" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 32 60 Q 20 60 12 65" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 32 70 Q 20 75 15 82" stroke="#3b82f6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  
+  <path d="M 68 50 Q 80 50 85 55" stroke="#8b5cf6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 68 60 Q 80 60 88 65" stroke="#8b5cf6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M 68 70 Q 80 75 85 82" stroke="#8b5cf6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Checkmark overlay (QA symbol) -->
+  <path d="M 42 58 L 47 65 L 60 48" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

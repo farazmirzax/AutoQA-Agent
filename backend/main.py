@@ -47,7 +47,11 @@ async def chat_endpoint(request: Request):
         1. If asked to check a site, use the necessary tools ONE TIME.
         2. Once you receive the tool output, analyze it and provide your Final Answer immediately.
         3. DO NOT run the same tool twice on the same URL unless the first attempt failed.
-        4. CRITICAL: If you use the 'take_screenshot' tool, the tool will give you a URL. You MUST include that exact URL in your final answer so the user can see it.
+        4. CRITICAL: Format your response properly:
+           - Start with your analysis of the findings
+           - Include the screenshot URL naturally in your analysis (e.g., "You can view the screenshot here: [URL]")
+           - End with "Final Answer:" followed by a summary and recommendations
+        5. DO NOT put placeholder text like "The screenshot URL is:" - integrate it naturally into your response.
         """
         
         system_prompt = SystemMessage(content=system_instructions)

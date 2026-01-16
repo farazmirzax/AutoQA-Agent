@@ -190,7 +190,7 @@ export default function Home() {
             {/* History Button */}
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-2 rounded-lg transition-all cursor-pointer ${
                 darkMode 
                   ? "hover:bg-gray-700 text-gray-300" 
                   : "hover:bg-gray-100 text-gray-600"
@@ -205,7 +205,7 @@ export default function Home() {
             {/* Clear Chat Button */}
             <button
               onClick={clearChat}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-2 rounded-lg transition-all cursor-pointer ${
                 darkMode 
                   ? "hover:bg-gray-700 text-gray-300" 
                   : "hover:bg-gray-100 text-gray-600"
@@ -220,7 +220,7 @@ export default function Home() {
             {/* Dark Mode Toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg transition-all ${
+              className={`p-2 rounded-lg transition-all cursor-pointer ${
                 darkMode 
                   ? "bg-gray-700 text-yellow-400" 
                   : "bg-gray-100 text-gray-700"
@@ -253,7 +253,7 @@ export default function Home() {
             <div className="flex gap-2">
               <button
                 onClick={clearHistory}
-                className={`text-xs px-2 py-1 rounded ${
+                className={`text-xs px-2 py-1 rounded cursor-pointer ${
                   darkMode ? "bg-red-900/30 text-red-400 hover:bg-red-900/50" : "bg-red-50 text-red-600 hover:bg-red-100"
                 }`}
               >
@@ -261,7 +261,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setShowHistory(false)}
-                className={`text-xs px-2 py-1 rounded ${
+                className={`text-xs px-2 py-1 rounded cursor-pointer ${
                   darkMode ? "bg-gray-700 text-gray-300" : "bg-gray-100 text-gray-600"
                 }`}
               >
@@ -330,7 +330,7 @@ export default function Home() {
                     <button
                       key={index}
                       onClick={() => useExampleQuery(example)}
-                      className={`w-full text-left p-4 rounded-xl transition-all transform hover:scale-[1.02] ${
+                      className={`w-full text-left p-4 rounded-xl transition-all transform hover:scale-[1.02] cursor-pointer ${
                         darkMode 
                           ? "bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700" 
                           : "bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 shadow-sm hover:shadow"
@@ -394,7 +394,7 @@ export default function Home() {
                       />
                       <button
                         onClick={() => window.open(msg.text, "_blank")}
-                        className={`text-xs px-3 py-1 rounded-lg flex items-center gap-1 ${
+                        className={`text-xs px-3 py-1 rounded-lg flex items-center gap-1 cursor-pointer ${
                           darkMode ? "bg-gray-700 hover:bg-gray-600" : "bg-gray-100 hover:bg-gray-200"
                         }`}
                       >
@@ -458,8 +458,8 @@ export default function Home() {
                       ? "bg-gray-700 cursor-not-allowed text-gray-500"
                       : "bg-gray-200 cursor-not-allowed text-gray-400"
                     : darkMode
-                    ? "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-xl"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white hover:shadow-xl"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-xl cursor-pointer"
+                    : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white hover:shadow-xl cursor-pointer"
                 }`}
               >
                 {loading ? (
