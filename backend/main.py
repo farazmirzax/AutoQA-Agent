@@ -18,7 +18,11 @@ app = FastAPI(title="AutoQA Agent API", version="1.0")
 # 2. Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://*.github.io",  # GitHub Pages
+        "*"  # Allow all for development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

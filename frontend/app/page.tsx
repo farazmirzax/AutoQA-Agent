@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 interface Message {
   sender: "You" | "AutoQA" | "System";
   text: string;
@@ -91,7 +93,7 @@ export default function Home() {
 
     try {
       // Use fetch for Server-Sent Events (streaming)
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await fetch(`${API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -148,7 +150,7 @@ export default function Home() {
               });
             } else if (data.type === "final") {
               // Replace progress message with final response
-              const imageRegex = /(http:\/\/localhost:8000\/static\/screenshot_[a-zA-Z0-9_]+\.png)/;
+              const imageRegex = /(https?:\/\/[^\/]+\/static\/screenshot_[a-zA-Z0-9_]+\.png)/;
               const match = data.content.match(imageRegex);
 
               setChatHistory((prev) => {

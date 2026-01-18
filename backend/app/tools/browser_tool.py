@@ -1,4 +1,5 @@
 import time
+import os
 from playwright.sync_api import sync_playwright
 from langchain_core.tools import tool
 
@@ -76,7 +77,9 @@ class BrowserManager:
                 page.screenshot(path=filepath, full_page=False)
                 
                 # Return the URL that the Frontend can use
-                return f"http://localhost:8000/static/{filename}"
+                # Use environment variable for base URL in production
+                base_url = os.getenv("BASE_URL", "http://localhost:8000")
+                return f"{base_url}/static/{filename}"
             
             except Exception as e:
                 return f"Error taking screenshot: {e}"
