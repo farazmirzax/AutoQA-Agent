@@ -1,8 +1,10 @@
 import sys
 import os
+import json
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # <--- NEW IMPORT
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -30,44 +32,71 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 class Request(BaseModel):
     query: str
 
-# 5. Define the Endpoint
+# 5. Define the Streaming Endpoint
 @app.post("/chat")
 async def chat_endpoint(request: Request):
     """
-    Send a message to the QA Agent.
+    Send a message to the QA Agent with streaming progress updates.
     """
     print(f"📩 Received Query: {request.query}")
     
-    try:
-        # STRICT SYSTEM PROMPT
-        system_instructions = """You are an expert QA Engineer.
-        Your goal is to complete the user's request efficiently.
-        
-        RULES:
-        1. If asked to check a site, use the necessary tools ONE TIME.
-        2. Once you receive the tool output, analyze it and provide your Final Answer immediately.
-        3. DO NOT run the same tool twice on the same URL unless the first attempt failed.
-        4. CRITICAL: Format your response properly:
-           - Start with your analysis of the findings
-           - Include the screenshot URL naturally in your analysis (e.g., "You can view the screenshot here: [URL]")
-           - End with "Final Answer:" followed by a summary and recommendations
-        5. DO NOT put placeholder text like "The screenshot URL is:" - integrate it naturally into your response.
-        """
-        
-        system_prompt = SystemMessage(content=system_instructions)
-        messages = [system_prompt, HumanMessage(content=request.query)]
-        
-        # Run the Graph
-        result = graph.invoke({"messages": messages})
-        
-        # Extract the final response from the agent
-        final_message = result["messages"][-1].content
-        
-        return {"response": final_message}
-
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    async def event_generator():
+        try:
+            # STRICT SYSTEM PROMPT
+            system_instructions = """You are an expert QA Engineer.
+            Your goal is to complete the user's request efficiently.
+            
+            RULES:
+            1. If asked to check a site, use the necessary tools ONE TIME.
+            2. DO NOT mention screenshots or URLs until you have actually received them from the tool.
+            3. DO NOT run the same tool twice on the same URL unless the first attempt failed.
+            4. CRITICAL: Format your response properly:
+               - Only mention the screenshot URL AFTER you receive it from the take_screenshot tool
+               - Include it naturally in your final analysis (e.g., "You can view the screenshot here: [URL]")
+               - End with "Final Answer:" followed by a summary and recommendations
+            5. DO NOT say "The screenshot URL is:" or mention screenshots before taking them.
+            """
+            
+            system_prompt = SystemMessage(content=system_instructions)
+            messages = [system_prompt, HumanMessage(content=request.query)]
+            
+            # Stream the Graph execution
+            for event in graph.stream({"messages": messages}, stream_mode="values"):
+                last_msg = event["messages"][-1]
+                
+                # If it's a Tool Call (agent deciding to use a tool)
+                if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
+                    tool_name = last_msg.tool_calls[0]['name']
+                    tool_args = last_msg.tool_calls[0].get('args', {})
+                    url = tool_args.get('url', '')
+                    
+                    # Send progress update based on tool
+                    if tool_name == 'visit_page':
+                        progress_msg = f"🌐 Opening {url}..."
+                    elif tool_name == 'check_page_links':
+                        progress_msg = f"🔗 Scanning links on {url}..."
+                    elif tool_name == 'take_screenshot':
+                        progress_msg = f"📸 Taking screenshot of {url}..."
+                    else:
+                        progress_msg = f"🛠️ Using {tool_name}..."
+                    
+                    yield f"data: {json.dumps({'type': 'progress', 'content': progress_msg})}\n\n"
+                
+                # If it's a Tool Message (result from tool execution)
+                elif last_msg.type == 'tool':
+                    yield f"data: {json.dumps({'type': 'progress', 'content': '✅ Completed'})}\n\n"
+                
+                # If it's the final AI response
+                elif last_msg.type == 'ai' and not last_msg.tool_calls:
+                    yield f"data: {json.dumps({'type': 'final', 'content': last_msg.content})}\n\n"
+            
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+    
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 if __name__ == "__main__":
     import uvicorn

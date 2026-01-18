@@ -8,6 +8,8 @@ interface Message {
   text: string;
   isImage?: boolean;
   timestamp?: string;
+  isProgress?: boolean;
+  previewUrl?: string;
 }
 
 interface TestHistory {
@@ -88,40 +90,125 @@ export default function Home() {
     saveTestHistory(textToSend);
 
     try {
-      const res = await axios.post("http://localhost:8000/chat", {
-        query: textToSend,
+      // Use fetch for Server-Sent Events (streaming)
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: textToSend }),
       });
 
-      const responseText = res.data.response;
-      const responseTimestamp = new Date().toLocaleTimeString();
-      
-      // --- SMART SPLIT LOGIC ---
-      const imageRegex = /(http:\/\/localhost:8000\/static\/screenshot_[a-zA-Z0-9_]+\.png)/;
-      const match = responseText.match(imageRegex);
-
-      if (match) {
-        const imageUrl = match[0];
-        const cleanText = responseText.replace(imageUrl, "").trim();
-
-        setChatHistory((prev) => {
-          const newMessages = [...prev];
-          
-          if (cleanText) {
-             newMessages.push({ sender: "AutoQA", text: cleanText, isImage: false, timestamp: responseTimestamp });
-          }
-          
-          newMessages.push({ sender: "AutoQA", text: imageUrl, isImage: true, timestamp: responseTimestamp });
-          
-          return newMessages;
-        });
-
-      } else {
-        setChatHistory((prev) => [
-          ...prev, 
-          { sender: "AutoQA", text: responseText, isImage: false, timestamp: responseTimestamp }
-        ]);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
       }
 
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            const responseTimestamp = new Date().toLocaleTimeString();
+
+            if (data.type === "progress") {
+              // Extract URL from progress message for preview
+              const urlMatch = data.content.match(/https?:\/\/[^\s]+/);
+              const previewUrl = urlMatch ? urlMatch[0] : undefined;
+              
+              // Update or add progress message
+              setChatHistory((prev) => {
+                const newMessages = [...prev];
+                // Find existing progress message or add new one
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.sender === "AutoQA" && lastMessage.isProgress) {
+                  // Update existing progress message
+                  lastMessage.text = data.content;
+                  if (previewUrl) lastMessage.previewUrl = previewUrl;
+                } else {
+                  // Add new progress message
+                  newMessages.push({
+                    sender: "AutoQA",
+                    text: data.content,
+                    timestamp: responseTimestamp,
+                    isProgress: true,
+                    previewUrl,
+                  });
+                }
+                return newMessages;
+              });
+            } else if (data.type === "final") {
+              // Replace progress message with final response
+              const imageRegex = /(http:\/\/localhost:8000\/static\/screenshot_[a-zA-Z0-9_]+\.png)/;
+              const match = data.content.match(imageRegex);
+
+              setChatHistory((prev) => {
+                const newMessages = [...prev];
+                
+                // Remove progress message if it exists
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.sender === "AutoQA" && lastMessage.isProgress) {
+                  newMessages.pop();
+                }
+
+                if (match) {
+                  const imageUrl = match[0];
+                  // Remove the screenshot URL and clean up any leftover text patterns
+                  let cleanText = data.content
+                    .replace(imageUrl, "")
+                    .replace(/You can view the screenshot here:\s*\.?/gi, "")
+                    .replace(/The screenshot (?:URL )?is:\s*\.?/gi, "")
+                    .replace(/Screenshot:\s*\.?/gi, "")
+                    .trim();
+
+                  if (cleanText) {
+                    newMessages.push({
+                      sender: "AutoQA",
+                      text: cleanText,
+                      isImage: false,
+                      timestamp: responseTimestamp,
+                    });
+                  }
+
+                  newMessages.push({
+                    sender: "AutoQA",
+                    text: imageUrl,
+                    isImage: true,
+                    timestamp: responseTimestamp,
+                  });
+                } else {
+                  newMessages.push({
+                    sender: "AutoQA",
+                    text: data.content,
+                    isImage: false,
+                    timestamp: responseTimestamp,
+                  });
+                }
+
+                return newMessages;
+              });
+            } else if (data.type === "error") {
+              setChatHistory((prev) => [
+                ...prev,
+                {
+                  sender: "System",
+                  text: `❌ Error: ${data.content}`,
+                  timestamp: responseTimestamp,
+                },
+              ]);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error(error);
       setChatHistory((prev) => [
@@ -405,9 +492,51 @@ export default function Home() {
                       </button>
                     </div>
                   ) : (
-                    <div className="whitespace-pre-wrap leading-relaxed text-sm">
-                      {msg.text}
-                    </div>
+                    <>
+                      <div className="whitespace-pre-wrap leading-relaxed text-sm">
+                        {msg.text}
+                      </div>
+                      
+                      {/* Show website indicator for progress messages */}
+                      {msg.isProgress && msg.previewUrl && (
+                        <div className={`mt-3 rounded-lg overflow-hidden border-2 ${
+                          darkMode ? "border-blue-500/30 bg-blue-900/20" : "border-blue-200 bg-blue-50"
+                        }`}>
+                          <div className={`px-4 py-3 flex items-center gap-3 ${
+                            darkMode ? "bg-gray-800/50" : "bg-white"
+                          }`}>
+                            <div className="relative">
+                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                              <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`text-xs font-semibold mb-1 ${
+                                darkMode ? "text-gray-300" : "text-gray-600"
+                              }`}>
+                                Testing Website
+                              </div>
+                              <div className={`font-mono text-xs truncate ${
+                                darkMode ? "text-blue-400" : "text-blue-600"
+                              }`}>
+                                {msg.previewUrl}
+                              </div>
+                            </div>
+                            <a
+                              href={msg.previewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                darkMode 
+                                  ? "bg-blue-600 hover:bg-blue-500 text-white" 
+                                  : "bg-blue-600 hover:bg-blue-700 text-white"
+                              }`}
+                            >
+                              Open →
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

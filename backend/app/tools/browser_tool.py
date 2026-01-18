@@ -5,8 +5,8 @@ from langchain_core.tools import tool
 class BrowserManager:
     def navigate(self, url: str):
         with sync_playwright() as p:
-            # Launch browser (Headless=False lets you see it working)
-            browser = p.chromium.launch(headless=False, slow_mo=500)
+            # Launch browser in headless mode for seamless background operation
+            browser = p.chromium.launch(headless=True)
             context = browser.new_context()
             page = context.new_page()
             
