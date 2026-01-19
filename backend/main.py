@@ -44,6 +44,8 @@ async def chat_endpoint(request: Request):
     """
     print(f"📩 Received Query: {request.query}")
     
+    from fastapi.responses import StreamingResponse
+    
     async def event_generator():
         try:
             # STRICT SYSTEM PROMPT
@@ -100,7 +102,15 @@ async def chat_endpoint(request: Request):
             print(f"❌ Error: {e}")
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
     
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_generator(), 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",  # Disable proxy buffering
+            "Connection": "keep-alive",
+        }
+    )
 
 if __name__ == "__main__":
     import uvicorn
