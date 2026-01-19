@@ -20,8 +20,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://*.github.io",  # GitHub Pages
-        "*"  # Allow all for development
+        "https://auto-qa-ai-agent.vercel.app",
+        "https://*.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -32,11 +32,25 @@ app.add_middleware(
 # Make sure the 'static' folder exists in your backend directory!
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# 4. Define the Request Format
+# 4. Root Endpoint
+@app.get("/")
+async def root():
+    return {
+        "service": "AutoQA Agent API",
+        "version": "1.0",
+        "status": "running",
+        "endpoints": {
+            "chat": "/chat",
+            "static": "/static",
+            "docs": "/docs"
+        }
+    }
+
+# 5. Define the Request Format
 class Request(BaseModel):
     query: str
 
-# 5. Define the Streaming Endpoint
+# 6. Define the Streaming Endpoint
 @app.post("/chat")
 async def chat_endpoint(request: Request):
     """
