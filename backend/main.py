@@ -62,6 +62,8 @@ async def chat_endpoint(request: Request):
     
     async def event_generator():
         try:
+            print(f"🚀 Starting agent execution for query: {request.query}")
+            
             # STRICT SYSTEM PROMPT
             system_instructions = """You are an expert QA Engineer.
             Your goal is to complete the user's request efficiently.
@@ -113,8 +115,12 @@ async def chat_endpoint(request: Request):
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
             
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
             print(f"❌ Error: {e}")
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            print(f"❌ Full traceback:\n{error_details}")
+            error_message = f"Error: {str(e)}"
+            yield f"data: {json.dumps({'type': 'error', 'content': error_message})}\n\n"
     
     return StreamingResponse(
         event_generator(), 
