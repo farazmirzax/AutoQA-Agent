@@ -82,7 +82,11 @@ class BrowserManager:
                 return f"{base_url}/static/{filename}"
             
             except Exception as e:
-                return f"Error taking screenshot: {e}"
+                import traceback
+                error_details = traceback.format_exc()
+                print(f"❌ Screenshot Error: {e}")
+                print(f"Full traceback:\n{error_details}")
+                return f"Error taking screenshot: {e}\n{error_details}"
             finally:
                 browser.close()
 
