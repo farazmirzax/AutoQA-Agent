@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
 # Ensure we can find the app module
 sys.path.append(os.getcwd())
@@ -29,8 +29,13 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # 4. Define the Request Format
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
 class Request(BaseModel):
     query: str
+    history: list[ChatMessage] = []  # Previous conversation messages
 
 # 5. Define the Streaming Endpoint
 @app.post("/chat")
@@ -55,10 +60,24 @@ async def chat_endpoint(request: Request):
                - Include it naturally in your final analysis (e.g., "You can view the screenshot here: [URL]")
                - End with "Final Answer:" followed by a summary and recommendations
             5. DO NOT say "The screenshot URL is:" or mention screenshots before taking them.
+            6. When the user asks follow-up questions about a site you already tested, use your memory of the previous conversation to answer. DO NOT re-test the site unless explicitly asked.
+            7. If you need to reference a site from earlier in the conversation, use the URL from the previous context.
             """
             
             system_prompt = SystemMessage(content=system_instructions)
-            messages = [system_prompt, HumanMessage(content=request.query)]
+            
+            # Build messages list with conversation history
+            messages = [system_prompt]
+            
+            # Add conversation history
+            for msg in request.history:
+                if msg.role == "user":
+                    messages.append(HumanMessage(content=msg.content))
+                elif msg.role == "assistant":
+                    messages.append(AIMessage(content=msg.content))
+            
+            # Add current query
+            messages.append(HumanMessage(content=request.query))
             
             # Stream the Graph execution
             for event in graph.stream({"messages": messages}, stream_mode="values"):

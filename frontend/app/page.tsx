@@ -89,6 +89,14 @@ export default function Home() {
     // Save to history
     saveTestHistory(textToSend);
 
+    // Build conversation history for context (exclude progress messages and images)
+    const conversationHistory = chatHistory
+      .filter(msg => !msg.isProgress && !msg.isImage)
+      .map(msg => ({
+        role: msg.sender === "You" ? "user" : "assistant",
+        content: msg.text
+      }));
+
     try {
       // Use fetch for Server-Sent Events (streaming)
       const response = await fetch("http://localhost:8000/chat", {
@@ -96,7 +104,10 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: textToSend }),
+        body: JSON.stringify({ 
+          query: textToSend,
+          history: conversationHistory 
+        }),
       });
 
       if (!response.ok) {
