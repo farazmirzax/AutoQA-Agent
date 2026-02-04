@@ -44,6 +44,9 @@ async def chat_endpoint(request: Request):
     Send a message to the QA Agent with streaming progress updates.
     """
     print(f"📩 Received Query: {request.query}")
+    print(f"📜 Conversation History: {len(request.history)} messages")
+    for i, msg in enumerate(request.history):
+        print(f"   [{i}] {msg.role}: {msg.content[:50]}...")
     
     async def event_generator():
         try:

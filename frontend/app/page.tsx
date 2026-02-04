@@ -90,12 +90,15 @@ export default function Home() {
     saveTestHistory(textToSend);
 
     // Build conversation history for context (exclude progress messages and images)
+    // Note: chatHistory already includes all previous messages at this point
     const conversationHistory = chatHistory
       .filter(msg => !msg.isProgress && !msg.isImage)
       .map(msg => ({
         role: msg.sender === "You" ? "user" : "assistant",
         content: msg.text
       }));
+    
+    console.log("Sending history:", conversationHistory);
 
     try {
       // Use fetch for Server-Sent Events (streaming)
